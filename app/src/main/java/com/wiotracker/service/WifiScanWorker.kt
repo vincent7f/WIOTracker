@@ -22,8 +22,17 @@ class WifiScanWorker(
             val endHour = preferences.scanEndHour
 
             // Check if we're in the scan time range
+            // Supports both normal range (e.g., 8-20) and overnight range (e.g., 22-6)
             val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-            if (currentHour < startHour || currentHour >= endHour) {
+            val isInTimeRange = if (startHour < endHour) {
+                // Normal range: startHour to endHour (e.g., 8:00 to 20:00)
+                currentHour >= startHour && currentHour < endHour
+            } else {
+                // Overnight range: startHour to endHour across midnight (e.g., 22:00 to 06:00)
+                currentHour >= startHour || currentHour < endHour
+            }
+            
+            if (!isInTimeRange) {
                 return Result.success() // Not in scan time range, skip
             }
 
