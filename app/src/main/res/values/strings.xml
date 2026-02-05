@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WiFi Tracker</string>
+    <string name="settings">设置</string>
+    <string name="log">日志</string>
+    <string name="calendar">打卡</string>
+    <string name="wifi_name">WiFi名称</string>
+    <string name="wifi_name_hint">例如：1865</string>
+    <string name="scan_start_time">扫描开始时间</string>
+    <string name="scan_end_time">扫描结束时间</string>
+    <string name="save">保存</string>
+    <string name="no_records">暂无记录</string>
+    <string name="match_count">匹配次数：%d</string>
+    <string name="location_permission_required">需要位置权限才能扫描WiFi</string>
+    <string name="grant_permission">授予权限</string>
+    <string name="save_success">设置已保存</string>
+    <string name="save_failed">保存失败</string>
+    <string name="wifi_name_empty_error">WiFi名称不能为空</string>
+    <string name="time_range_error">开始时间必须小于结束时间</string>
+    <string name="select_time">选择</string>
+    <string name="permission_denied">权限被拒绝，WiFi扫描功能将无法使用</string>
+    <string name="wifi_disabled">WiFi未启用，请先启用WiFi</string>
+    <string name="no_wifi_matched">未找到匹配的WiFi</string>
+    <string name="go_to_settings">前往设置</string>
+</resources>
