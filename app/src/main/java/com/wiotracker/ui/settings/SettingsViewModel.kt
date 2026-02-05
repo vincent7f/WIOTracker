@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wiotracker.data.preferences.AppPreferences
 import com.wiotracker.util.WorkManagerHelper
+import com.wiotracker.util.WifiScanner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class SettingsUiState(
     val targetWifiName: String = "",
@@ -17,6 +20,8 @@ data class SettingsUiState(
     val targetTimes: Int = 1,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
+    val isTesting: Boolean = false,
+    val testResult: String? = null,
     val errorMessage: String? = null,
     val wifiNameError: String? = null,
     val timeRangeError: String? = null,
@@ -202,5 +207,65 @@ class SettingsViewModel(
             scanIntervalError = null,
             targetTimesError = null
         )
+    }
+
+    fun testWifiName() {
+        val wifiName = _uiState.value.targetWifiName.trim()
+        
+        if (wifiName.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                testResult = "请输入WiFi名称",
+                isTesting = false
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isTesting = true,
+                testResult = null
+            )
+
+            try {
+                val wifiScanner = WifiScanner(context)
+                
+                // Check if WiFi is enabled
+                if (!wifiScanner.isWifiEnabled()) {
+                    _uiState.value = _uiState.value.copy(
+                        isTesting = false,
+                        testResult = "WiFi未启用，请先开启WiFi"
+                    )
+                    return@launch
+                }
+
+                // Perform scan
+                val matchedWifis = withContext(Dispatchers.IO) {
+                    wifiScanner.scanAndMatch(wifiName)
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    isTesting = false,
+                    testResult = if (matchedWifis.isNotEmpty()) {
+                        "找到 ${matchedWifis.size} 个匹配的WiFi:\n${matchedWifis.joinToString("\n")}"
+                    } else {
+                        "未找到匹配的WiFi网络"
+                    }
+                )
+            } catch (e: SecurityException) {
+                _uiState.value = _uiState.value.copy(
+                    isTesting = false,
+                    testResult = "权限不足，请确保已授予位置权限"
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isTesting = false,
+                    testResult = "测试失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun clearTestResult() {
+        _uiState.value = _uiState.value.copy(testResult = null)
     }
 }

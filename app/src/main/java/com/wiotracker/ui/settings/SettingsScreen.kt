@@ -76,6 +76,10 @@ fun SettingsScreen(
                     if (uiState.wifiNameError != null) {
                         actualViewModel.clearError()
                     }
+                    // Clear test result when user changes WiFi name
+                    if (uiState.testResult != null) {
+                        actualViewModel.clearTestResult()
+                    }
                 },
                 label = { Text(stringResource(R.string.wifi_name)) },
                 placeholder = { Text(stringResource(R.string.wifi_name_hint)) },
@@ -84,6 +88,48 @@ fun SettingsScreen(
                 isError = uiState.wifiNameError != null,
                 supportingText = uiState.wifiNameError?.let { { Text(it) } }
             )
+
+            // Test WiFi Button
+            Button(
+                onClick = actualViewModel::testWifiName,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isTesting && uiState.targetWifiName.isNotBlank()
+            ) {
+                if (uiState.isTesting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("测试中...")
+                } else {
+                    Text("测试WiFi")
+                }
+            }
+
+            // Test Result Display
+            uiState.testResult?.let { result ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (result.contains("找到")) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.errorContainer
+                        }
+                    )
+                ) {
+                    Text(
+                        text = result,
+                        modifier = Modifier.padding(16.dp),
+                        color = if (result.contains("找到")) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        }
+                    )
+                }
+            }
 
             // Start Time Picker
             var showStartTimePicker by remember { mutableStateOf(false) }
