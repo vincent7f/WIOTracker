@@ -21,12 +21,14 @@ import com.wiotracker.data.repository.WifiScanRepository
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen(
-    viewModel: LogViewModel = viewModel {
-        val database = AppDatabase.getDatabase(LocalContext.current)
+    viewModel: LogViewModel? = null
+) {
+    val context = LocalContext.current
+    val actualViewModel = viewModel ?: remember {
+        val database = AppDatabase.getDatabase(context)
         LogViewModel(WifiScanRepository(database.wifiScanDao()))
     }
-) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by actualViewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -75,7 +77,7 @@ fun LogScreen(
                 items(uiState.records) { record ->
                     LogItem(
                         wifiName = record.wifiName,
-                        timestamp = viewModel.formatTimestamp(record.timestamp),
+                        timestamp = actualViewModel.formatTimestamp(record.timestamp),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

@@ -17,23 +17,26 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = viewModel {
+    viewModel: SettingsViewModel? = null
+) {
+    val context = LocalContext.current
+    val actualViewModel = viewModel ?: remember {
         SettingsViewModel(
-            AppPreferences(LocalContext.current),
-            LocalContext.current
+            AppPreferences(context),
+            context
         )
     }
-) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by actualViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val saveSuccessMessage = stringResource(R.string.save_success)
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
             snackbarHostState.showSnackbar(
-                message = stringResource(R.string.save_success),
+                message = saveSuccessMessage,
                 duration = SnackbarDuration.Short
             )
-            viewModel.clearSaveSuccess()
+            actualViewModel.clearSaveSuccess()
         }
     }
 
@@ -44,7 +47,7 @@ fun SettingsScreen(
                 duration = SnackbarDuration.Long
             )
             delay(3000) // Clear error after showing
-            viewModel.clearError()
+            actualViewModel.clearError()
         }
     }
 
@@ -69,10 +72,10 @@ fun SettingsScreen(
             OutlinedTextField(
                 value = uiState.targetWifiName,
                 onValueChange = {
-                    viewModel.updateTargetWifiName(it)
+                    actualViewModel.updateTargetWifiName(it)
                     // Clear error when user starts typing
                     if (uiState.wifiNameError != null) {
-                        viewModel.clearError()
+                        actualViewModel.clearError()
                     }
                 },
                 label = { Text(stringResource(R.string.wifi_name)) },
@@ -104,7 +107,7 @@ fun SettingsScreen(
                 TimePickerDialog(
                     initialHour = startHour,
                     onTimeSelected = { hour ->
-                        viewModel.updateStartHour(hour)
+                        actualViewModel.updateStartHour(hour)
                         showStartTimePicker = false
                     },
                     onDismiss = { showStartTimePicker = false }
@@ -136,7 +139,7 @@ fun SettingsScreen(
                 TimePickerDialog(
                     initialHour = endHour,
                     onTimeSelected = { hour ->
-                        viewModel.updateEndHour(hour)
+                        actualViewModel.updateEndHour(hour)
                         showEndTimePicker = false
                     },
                     onDismiss = { showEndTimePicker = false }
@@ -161,7 +164,7 @@ fun SettingsScreen(
 
             // Save Button
             Button(
-                onClick = viewModel::saveSettings,
+                onClick = actualViewModel::saveSettings,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

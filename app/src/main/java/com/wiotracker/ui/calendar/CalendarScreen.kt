@@ -23,12 +23,14 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
-    viewModel: CalendarViewModel = viewModel {
-        val database = AppDatabase.getDatabase(LocalContext.current)
+    viewModel: CalendarViewModel? = null
+) {
+    val context = LocalContext.current
+    val actualViewModel = viewModel ?: remember {
+        val database = AppDatabase.getDatabase(context)
         CalendarViewModel(WifiScanRepository(database.wifiScanDao()))
     }
-) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by actualViewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -50,7 +52,7 @@ fun CalendarScreen(
                     val calendar = Calendar.getInstance()
                     calendar.set(uiState.currentYear, uiState.currentMonth, 1)
                     calendar.add(Calendar.MONTH, -1)
-                    viewModel.changeMonth(
+                    actualViewModel.changeMonth(
                         calendar.get(Calendar.MONTH),
                         calendar.get(Calendar.YEAR)
                     )
@@ -59,7 +61,7 @@ fun CalendarScreen(
                     val calendar = Calendar.getInstance()
                     calendar.set(uiState.currentYear, uiState.currentMonth, 1)
                     calendar.add(Calendar.MONTH, 1)
-                    viewModel.changeMonth(
+                    actualViewModel.changeMonth(
                         calendar.get(Calendar.MONTH),
                         calendar.get(Calendar.YEAR)
                     )
@@ -71,7 +73,7 @@ fun CalendarScreen(
                 month = uiState.currentMonth,
                 year = uiState.currentYear,
                 dailyStats = uiState.dailyStats,
-                viewModel = viewModel,
+                viewModel = actualViewModel,
                 modifier = Modifier.fillMaxSize()
             )
         }
