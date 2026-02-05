@@ -13,11 +13,15 @@ data class SettingsUiState(
     val targetWifiName: String = "",
     val startHour: Int = 8,
     val endHour: Int = 20,
+    val scanIntervalMinutes: Int = 15,
+    val targetTimes: Int = 1,
     val isSaving: Boolean = false,
     val saveSuccess: Boolean = false,
     val errorMessage: String? = null,
     val wifiNameError: String? = null,
-    val timeRangeError: String? = null
+    val timeRangeError: String? = null,
+    val scanIntervalError: String? = null,
+    val targetTimesError: String? = null
 )
 
 class SettingsViewModel(
@@ -36,7 +40,9 @@ class SettingsViewModel(
         _uiState.value = SettingsUiState(
             targetWifiName = preferences.targetWifiName,
             startHour = preferences.scanStartHour,
-            endHour = preferences.scanEndHour
+            endHour = preferences.scanEndHour,
+            scanIntervalMinutes = preferences.scanIntervalMinutes,
+            targetTimes = preferences.targetTimes
         )
     }
 
@@ -53,6 +59,22 @@ class SettingsViewModel(
         _uiState.value = newState
         // Clear time range error when user changes end hour
         validateTimeRange(newState.startHour, hour)
+    }
+
+    fun updateScanIntervalMinutes(minutes: Int) {
+        val error = validateScanInterval(minutes)
+        _uiState.value = _uiState.value.copy(
+            scanIntervalMinutes = minutes,
+            scanIntervalError = error
+        )
+    }
+
+    fun updateTargetTimes(times: Int) {
+        val error = validateTargetTimes(times)
+        _uiState.value = _uiState.value.copy(
+            targetTimes = times,
+            targetTimesError = error
+        )
     }
 
     private fun validateSettings(): Boolean {
@@ -75,13 +97,43 @@ class SettingsViewModel(
             null
         }
 
+        // Validate scan interval
+        val scanIntervalError = validateScanInterval(state.scanIntervalMinutes)
+        if (scanIntervalError != null) {
+            isValid = false
+        }
+
+        // Validate target times
+        val targetTimesError = validateTargetTimes(state.targetTimes)
+        if (targetTimesError != null) {
+            isValid = false
+        }
+
         _uiState.value = state.copy(
             wifiNameError = wifiNameError,
             timeRangeError = timeRangeError,
+            scanIntervalError = scanIntervalError,
+            targetTimesError = targetTimesError,
             errorMessage = null
         )
 
         return isValid
+    }
+
+    private fun validateScanInterval(minutes: Int): String? {
+        return when {
+            minutes < 15 -> "扫描间隔至少为15分钟（WorkManager限制）"
+            minutes % 5 != 0 -> "扫描间隔必须是5分钟的倍数"
+            else -> null
+        }
+    }
+
+    private fun validateTargetTimes(times: Int): String? {
+        return if (times < 1) {
+            "目标次数必须大于0"
+        } else {
+            null
+        }
     }
 
     private fun validateTimeRange(startHour: Int, endHour: Int) {
@@ -98,7 +150,9 @@ class SettingsViewModel(
         _uiState.value = _uiState.value.copy(
             errorMessage = null,
             wifiNameError = null,
-            timeRangeError = null
+            timeRangeError = null,
+            scanIntervalError = null,
+            targetTimesError = null
         )
 
         // Validate settings
@@ -116,6 +170,8 @@ class SettingsViewModel(
                 preferences.targetWifiName = _uiState.value.targetWifiName.trim()
                 preferences.scanStartHour = _uiState.value.startHour
                 preferences.scanEndHour = _uiState.value.endHour
+                preferences.scanIntervalMinutes = _uiState.value.scanIntervalMinutes
+                preferences.targetTimes = _uiState.value.targetTimes
 
                 // Restart WorkManager with new settings
                 WorkManagerHelper.schedulePeriodicScan(context)
@@ -142,7 +198,9 @@ class SettingsViewModel(
         _uiState.value = _uiState.value.copy(
             errorMessage = null,
             wifiNameError = null,
-            timeRangeError = null
+            timeRangeError = null,
+            scanIntervalError = null,
+            targetTimesError = null
         )
     }
 }

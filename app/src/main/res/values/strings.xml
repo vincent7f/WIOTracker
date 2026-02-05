@@ -22,4 +22,8 @@
     <string name="wifi_disabled">WiFi未启用，请先启用WiFi</string>
     <string name="no_wifi_matched">未找到匹配的WiFi</string>
     <string name="go_to_settings">前往设置</string>
+    <string name="scan_interval">扫描间隔</string>
+    <string name="scan_interval_hint">至少15分钟，且为5的倍数</string>
+    <string name="target_times">目标次数</string>
+    <string name="target_times_hint">每天需要匹配的次数</string>
 </resources>

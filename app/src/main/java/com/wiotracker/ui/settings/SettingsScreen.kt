@@ -146,8 +146,47 @@ fun SettingsScreen(
                 )
             }
 
+            // Scan Interval Input
+            OutlinedTextField(
+                value = uiState.scanIntervalMinutes.toString(),
+                onValueChange = { value ->
+                    val minutes = value.toIntOrNull() ?: 0
+                    actualViewModel.updateScanIntervalMinutes(minutes)
+                    // Clear error when user starts typing
+                    if (uiState.scanIntervalError != null && minutes >= 5 && minutes % 5 == 0) {
+                        actualViewModel.clearError()
+                    }
+                },
+                label = { Text(stringResource(R.string.scan_interval)) },
+                placeholder = { Text(stringResource(R.string.scan_interval_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = uiState.scanIntervalError != null,
+                supportingText = uiState.scanIntervalError?.let { { Text(it) } },
+                suffix = { Text("分钟") }
+            )
+
+            // Target Times Input
+            OutlinedTextField(
+                value = uiState.targetTimes.toString(),
+                onValueChange = { value ->
+                    val times = value.toIntOrNull() ?: 0
+                    actualViewModel.updateTargetTimes(times)
+                    // Clear error when user starts typing
+                    if (uiState.targetTimesError != null && times >= 1) {
+                        actualViewModel.clearError()
+                    }
+                },
+                label = { Text(stringResource(R.string.target_times)) },
+                placeholder = { Text(stringResource(R.string.target_times_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = uiState.targetTimesError != null,
+                supportingText = uiState.targetTimesError?.let { { Text(it) } }
+            )
+
             // Error message display
-            if (uiState.errorMessage != null && uiState.wifiNameError == null && uiState.timeRangeError == null) {
+            if (uiState.errorMessage != null && uiState.wifiNameError == null && uiState.timeRangeError == null && uiState.scanIntervalError == null && uiState.targetTimesError == null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -168,7 +207,8 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !uiState.isSaving && uiState.targetWifiName.isNotBlank()
+                enabled = !uiState.isSaving && uiState.targetWifiName.isNotBlank() && 
+                    uiState.scanIntervalError == null && uiState.targetTimesError == null
             ) {
                 if (uiState.isSaving) {
                     CircularProgressIndicator(
