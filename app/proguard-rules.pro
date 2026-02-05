@@ -11,6 +11,16 @@
 -keep class androidx.work.** { *; }
 -dontwarn androidx.work.**
 
+# Keep WorkManager notification resources
+-keep class androidx.work.impl.foreground.** { *; }
+-dontwarn androidx.work.impl.foreground.**
+
+# Keep notification resources (needed for WorkManager)
+-keep class android.support.v4.app.NotificationCompat { *; }
+-keep class androidx.core.app.NotificationCompat { *; }
+-dontwarn android.support.v4.app.NotificationCompat
+-dontwarn androidx.core.app.NotificationCompat
+
 # Keep Compose classes (but allow optimization)
 -keep class androidx.compose.runtime.** { *; }
 -keep class androidx.compose.ui.** { *; }

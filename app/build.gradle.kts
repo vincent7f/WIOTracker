@@ -34,12 +34,16 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
+            isShrinkResources = false  // Disable resource shrinking to avoid notification layout issues
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
     compileOptions {
@@ -65,6 +69,12 @@ android {
             excludes += "/META-INF/NOTICE.txt"
             excludes += "/META-INF/*.kotlin_module"
         }
+    }
+    
+    // Fix resource merging issues
+    androidResources {
+        noCompress += "kotlin"
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~"
     }
 }
 
