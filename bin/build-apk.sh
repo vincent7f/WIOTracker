@@ -54,3 +54,31 @@ echo "Source: $APK_SOURCE"
 echo "Destination: $APK_DEST"
 echo ""
 echo "APK size: $(du -h "$APK_DEST" | cut -f1)"
+
+# Copy APK to sync folder only if SYNC_FOLDER environment variable is set
+if [ -n "$SYNC_FOLDER" ]; then
+    SYNC_DEST="${SYNC_FOLDER}/wiotracker-${TIMESTAMP}.apk"
+    
+    # Create sync folder if it doesn't exist
+    if [ ! -d "$SYNC_FOLDER" ]; then
+        echo "Creating sync folder: $SYNC_FOLDER"
+        mkdir -p "$SYNC_FOLDER"
+    fi
+    
+    # Copy APK to sync folder
+    echo ""
+    echo "Copying APK to sync folder..."
+    cp "$APK_SOURCE" "$SYNC_DEST"
+    
+    if [ $? -eq 0 ]; then
+        echo "APK copied to sync folder successfully!"
+        echo "Sync destination: $SYNC_DEST"
+        echo "Sync folder size: $(du -h "$SYNC_DEST" | cut -f1)"
+    else
+        echo "Warning: Failed to copy APK to sync folder"
+        exit 1
+    fi
+else
+    echo ""
+    echo "SYNC_FOLDER environment variable not set, skipping sync folder copy"
+fi

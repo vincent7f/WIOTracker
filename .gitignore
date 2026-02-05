@@ -87,3 +87,8 @@ Desktop.ini
 .gradle/
 !gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
+
+# Keystore files (keep directory structure but ignore keystore files)
+app/keystore/*.keystore
+app/keystore/*.jks
+!app/keystore/.gitkeep
