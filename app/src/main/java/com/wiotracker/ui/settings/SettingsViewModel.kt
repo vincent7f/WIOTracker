@@ -2,7 +2,10 @@ package com.wiotracker.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wiotracker.data.database.AppDatabase
+import com.wiotracker.data.database.entity.WifiScanRecord
 import com.wiotracker.data.preferences.AppPreferences
+import com.wiotracker.data.repository.WifiScanRepository
 import com.wiotracker.util.WorkManagerHelper
 import com.wiotracker.util.WifiScanner
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -243,10 +246,32 @@ class SettingsViewModel(
                     wifiScanner.scanAndMatch(wifiName)
                 }
 
+                // Save test results to database if any WiFi found
+                if (matchedWifis.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        val database = AppDatabase.getDatabase(context)
+                        val repository = WifiScanRepository(database.wifiScanDao())
+                        val timestamp = System.currentTimeMillis()
+                        // Use timestamp as scanSessionId to group records from the same test scan
+                        val scanSessionId = timestamp
+
+                        matchedWifis.forEach { matchedWifiName ->
+                            repository.insertRecord(
+                                WifiScanRecord(
+                                    timestamp = timestamp,
+                                    wifiName = matchedWifiName,
+                                    matchedKeyword = wifiName,
+                                    scanSessionId = scanSessionId
+                                )
+                            )
+                        }
+                    }
+                }
+
                 _uiState.value = _uiState.value.copy(
                     isTesting = false,
                     testResult = if (matchedWifis.isNotEmpty()) {
-                        "找到 ${matchedWifis.size} 个匹配的WiFi:\n${matchedWifis.joinToString("\n")}"
+                        "找到 ${matchedWifis.size} 个匹配的WiFi:\n${matchedWifis.joinToString("\n")}\n\n结果已保存到日志"
                     } else {
                         "未找到匹配的WiFi网络"
                     }
