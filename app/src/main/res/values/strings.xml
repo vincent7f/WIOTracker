@@ -19,7 +19,7 @@
     <string name="time_range_error">开始时间必须小于结束时间</string>
     <string name="select_time">选择</string>
     <string name="permission_denied">权限被拒绝，WiFi扫描功能将无法使用</string>
-    <string name="wifi_disabled">WiFi未启用，请先启用WiFi</string>
+    <string name="wifi_disabled">WiFi未启用，请先开启WiFi</string>
     <string name="no_wifi_matched">未找到匹配的WiFi</string>
     <string name="go_to_settings">前往设置</string>
     <string name="scan_interval">扫描间隔</string>

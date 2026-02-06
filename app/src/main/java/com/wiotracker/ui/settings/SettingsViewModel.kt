@@ -163,6 +163,15 @@ class SettingsViewModel(
             targetTimesError = null
         )
 
+        // Check if WiFi is enabled
+        val wifiScanner = WifiScanner(context)
+        if (!wifiScanner.isWifiEnabled()) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = context.getString(com.wiotracker.R.string.wifi_disabled)
+            )
+            return
+        }
+
         // Validate settings
         if (!validateSettings()) {
             _uiState.value = _uiState.value.copy(
@@ -236,7 +245,7 @@ class SettingsViewModel(
                 if (!wifiScanner.isWifiEnabled()) {
                     _uiState.value = _uiState.value.copy(
                         isTesting = false,
-                        testResult = "WiFi未启用，请先开启WiFi"
+                        testResult = context.getString(com.wiotracker.R.string.wifi_disabled)
                     )
                     return@launch
                 }

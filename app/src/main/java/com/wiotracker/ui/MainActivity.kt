@@ -22,21 +22,32 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.wiotracker.R
 import com.wiotracker.ui.navigation.NavGraph
 import com.wiotracker.ui.navigation.Screen
 import com.wiotracker.ui.theme.WIOTrackerTheme
+import com.wiotracker.util.WifiScanner
 import com.wiotracker.util.WorkManagerHelper
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     private var hasLocationPermission = false
@@ -101,8 +112,30 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    var hasCheckedWifi by remember { mutableStateOf(false) }
+    val wifiDisabledMessage = context.getString(R.string.wifi_disabled)
 
-    ScaffoldWithBottomBar(navController = navController) {
+    // Check WiFi status when app loads
+    LaunchedEffect(Unit) {
+        delay(500) // Small delay to ensure UI is ready
+        if (!hasCheckedWifi) {
+            val wifiScanner = WifiScanner(context)
+            if (!wifiScanner.isWifiEnabled()) {
+                snackbarHostState.showSnackbar(
+                    message = wifiDisabledMessage,
+                    duration = SnackbarDuration.Long
+                )
+            }
+            hasCheckedWifi = true
+        }
+    }
+
+    ScaffoldWithBottomBar(
+        navController = navController,
+        snackbarHostState = snackbarHostState
+    ) {
         NavGraph(navController = navController)
     }
 }
@@ -110,6 +143,7 @@ fun MainScreen() {
 @Composable
 fun ScaffoldWithBottomBar(
     navController: androidx.navigation.NavHostController,
+    snackbarHostState: SnackbarHostState,
     content: @Composable () -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -152,6 +186,12 @@ fun ScaffoldWithBottomBar(
                     }
                 )
             }
+        },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
