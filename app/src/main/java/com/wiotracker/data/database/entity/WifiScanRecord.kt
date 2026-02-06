@@ -14,5 +14,6 @@ data class WifiScanRecord(
     val timestamp: Long,
     val wifiName: String,
     val matchedKeyword: String,
-    val scanSessionId: Long = 0  // Same session ID for records from the same scan
+    val scanSessionId: Long = 0,  // Same session ID for records from the same scan
+    val scanType: String = "periodic"  // "manual" or "periodic"
 )

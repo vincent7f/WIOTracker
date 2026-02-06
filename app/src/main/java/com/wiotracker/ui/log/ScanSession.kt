@@ -10,7 +10,8 @@ data class ScanSession(
     val timestamp: Long,
     val matchedKeyword: String,
     val wifiCount: Int,
-    val wifiNames: List<String>
+    val wifiNames: List<String>,
+    val scanType: String = "periodic"  // "manual" or "periodic"
 ) {
     companion object {
         fun fromRecords(records: List<WifiScanRecord>): ScanSession? {
@@ -22,7 +23,8 @@ data class ScanSession(
                 timestamp = firstRecord.timestamp,
                 matchedKeyword = firstRecord.matchedKeyword,
                 wifiCount = records.size,
-                wifiNames = records.map { it.wifiName }.sorted()
+                wifiNames = records.map { it.wifiName }.sorted(),
+                scanType = firstRecord.scanType
             )
         }
     }

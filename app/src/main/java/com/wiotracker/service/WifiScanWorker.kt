@@ -92,10 +92,11 @@ class WifiScanWorker(
                             timestamp = timestamp,
                             wifiName = wifiName,
                             matchedKeyword = targetWifiName,
-                            scanSessionId = scanSessionId
+                            scanSessionId = scanSessionId,
+                            scanType = "periodic"
                         )
                         repository.insertRecord(record)
-                        DebugLogManager.d(tag, "  Saved record: $wifiName")
+                        DebugLogManager.d(tag, "  Saved record: $wifiName (periodic)")
                     }
                     DebugLogManager.d(tag, "Successfully saved ${matchedWifis.size} record(s) to database")
                 } catch (e: Exception) {

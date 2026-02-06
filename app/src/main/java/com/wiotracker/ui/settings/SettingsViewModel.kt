@@ -270,7 +270,8 @@ class SettingsViewModel(
                                     timestamp = timestamp,
                                     wifiName = matchedWifiName,
                                     matchedKeyword = wifiName,
-                                    scanSessionId = scanSessionId
+                                    scanSessionId = scanSessionId,
+                                    scanType = "manual"
                                 )
                             )
                         }

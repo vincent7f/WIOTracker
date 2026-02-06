@@ -290,11 +290,35 @@ fun ScanSessionItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "扫描时间: $timestamp",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "扫描时间: $timestamp",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Surface(
+                            color = when (session.scanType) {
+                                "manual" -> MaterialTheme.colorScheme.secondaryContainer
+                                "periodic" -> MaterialTheme.colorScheme.primaryContainer
+                                else -> MaterialTheme.colorScheme.surfaceVariant
+                            },
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = if (session.scanType == "manual") "手动" else "定时",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = when (session.scanType) {
+                                    "manual" -> MaterialTheme.colorScheme.onSecondaryContainer
+                                    "periodic" -> MaterialTheme.colorScheme.onPrimaryContainer
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "匹配关键词: ${session.matchedKeyword}",
@@ -343,6 +367,34 @@ fun ScanSessionDetailDialog(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
                 )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "扫描类型:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Surface(
+                        color = when (session.scanType) {
+                            "manual" -> MaterialTheme.colorScheme.secondaryContainer
+                            "periodic" -> MaterialTheme.colorScheme.primaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = if (session.scanType == "manual") "手动" else "定时",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = when (session.scanType) {
+                                "manual" -> MaterialTheme.colorScheme.onSecondaryContainer
+                                "periodic" -> MaterialTheme.colorScheme.onPrimaryContainer
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                }
                 Text(
                     text = "匹配关键词: ${session.matchedKeyword}",
                     style = MaterialTheme.typography.bodyMedium
