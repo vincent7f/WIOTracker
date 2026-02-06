@@ -3,6 +3,9 @@ package com.wiotracker.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -12,10 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wiotracker.R
 import com.wiotracker.data.preferences.AppPreferences
@@ -347,34 +353,110 @@ fun TimePickerDialog(
     onDismiss: () -> Unit
 ) {
     var selectedHour by remember { mutableStateOf(initialHour) }
+    val hours = (0..23).toList()
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialHour.coerceIn(0, 23))
+    val coroutineScope = rememberCoroutineScope()
+
+    // Update selected hour when scrolling - use first visible item as selected
+    LaunchedEffect(listState.firstVisibleItemIndex) {
+        val visibleIndex = listState.firstVisibleItemIndex
+        if (visibleIndex in hours.indices) {
+            selectedHour = hours[visibleIndex]
+        }
+    }
+
+    // Scroll to initial hour when dialog opens
+    LaunchedEffect(Unit) {
+        listState.animateScrollToItem(initialHour.coerceIn(0, 23))
+    }
+
+    // Auto-snap to nearest item when scrolling stops
+    var isScrolling by remember { mutableStateOf(false) }
+    LaunchedEffect(listState.isScrollInProgress) {
+        isScrolling = listState.isScrollInProgress
+        if (!listState.isScrollInProgress && isScrolling) {
+            // Scroll has just stopped, snap to nearest item
+            val currentIndex = listState.firstVisibleItemIndex
+            if (currentIndex in hours.indices) {
+                coroutineScope.launch {
+                    listState.animateScrollToItem(currentIndex)
+                    selectedHour = hours[currentIndex]
+                }
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("选择时间") },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("小时: $selectedHour")
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                // Selected time display
+                Text(
+                    text = String.format("%02d:00", selectedHour),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                
+                // Scrollable hour picker
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            RoundedCornerShape(8.dp)
+                        )
                 ) {
-                    Button(onClick = {
-                        if (selectedHour > 0) selectedHour--
-                    }) {
-                        Text("-")
-                    }
-                    Text(
-                        text = String.format("%02d:00", selectedHour),
-                        style = MaterialTheme.typography.headlineMedium
+                    // Selection indicator lines
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .align(Alignment.Center)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                                RoundedCornerShape(4.dp)
+                            )
                     )
-                    Button(onClick = {
-                        if (selectedHour < 23) selectedHour++
-                    }) {
-                        Text("+")
+                    
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        contentPadding = PaddingValues(vertical = 55.dp)
+                    ) {
+                        itemsIndexed(hours) { index, hour ->
+                            val isSelected = hour == selectedHour
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = String.format("%02d:00", hour),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    modifier = Modifier.clickable {
+                                        coroutineScope.launch {
+                                            listState.animateScrollToItem(index)
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
