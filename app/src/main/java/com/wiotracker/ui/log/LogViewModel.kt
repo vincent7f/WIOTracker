@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.wiotracker.data.database.AppDatabase
 import com.wiotracker.data.database.entity.WifiScanRecord
 import com.wiotracker.data.repository.WifiScanRepository
+import com.wiotracker.util.DebugLogManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,11 +14,17 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class LogTab {
+    SCAN_RECORDS,
+    DEBUG_LOG
+}
+
 data class LogUiState(
     val scanSessions: List<ScanSession> = emptyList(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-    val selectedSession: ScanSession? = null
+    val selectedSession: ScanSession? = null,
+    val currentTab: LogTab = LogTab.SCAN_RECORDS
 )
 
 class LogViewModel(
@@ -26,6 +33,8 @@ class LogViewModel(
 
     private val _uiState = MutableStateFlow(LogUiState())
     val uiState: StateFlow<LogUiState> = _uiState.asStateFlow()
+    
+    val debugLogs = DebugLogManager.logs
 
     init {
         loadScanSessions()
@@ -61,6 +70,14 @@ class LogViewModel(
 
     fun clearSelectedSession() {
         _uiState.value = _uiState.value.copy(selectedSession = null)
+    }
+    
+    fun setCurrentTab(tab: LogTab) {
+        _uiState.value = _uiState.value.copy(currentTab = tab)
+    }
+    
+    fun clearDebugLogs() {
+        DebugLogManager.clear()
     }
 
     fun formatTimestamp(timestamp: Long): String {

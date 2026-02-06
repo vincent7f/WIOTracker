@@ -4,7 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,12 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.sp
 import com.wiotracker.R
 import com.wiotracker.data.database.AppDatabase
 import com.wiotracker.data.repository.WifiScanRepository
+import com.wiotracker.util.DebugLogManager
+import com.wiotracker.util.LogLevel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +36,7 @@ fun LogScreen(
         LogViewModel(WifiScanRepository(database.wifiScanDao()))
     }
     val uiState by actualViewModel.uiState.collectAsState()
+    val debugLogs by actualViewModel.debugLogs.collectAsState()
 
     // Show detail dialog when a session is selected
     uiState.selectedSession?.let { session ->
@@ -43,57 +50,220 @@ fun LogScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.log)) }
+                title = { Text(stringResource(R.string.log)) },
+                actions = {
+                    if (uiState.currentTab == LogTab.DEBUG_LOG) {
+                        IconButton(onClick = { actualViewModel.clearDebugLogs() }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Clear logs")
+                        }
+                    }
+                }
             )
         }
     ) { paddingValues ->
-        if (uiState.scanSessions.isEmpty()) {
-            Box(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Tab selector
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.List,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        text = stringResource(R.string.no_records),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "扫描记录将显示在这里",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                TabButton(
+                    text = "扫描记录",
+                    selected = uiState.currentTab == LogTab.SCAN_RECORDS,
+                    onClick = { actualViewModel.setCurrentTab(LogTab.SCAN_RECORDS) },
+                    modifier = Modifier.weight(1f)
+                )
+                TabButton(
+                    text = "调试日志",
+                    selected = uiState.currentTab == LogTab.DEBUG_LOG,
+                    onClick = { actualViewModel.setCurrentTab(LogTab.DEBUG_LOG) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            // Content based on selected tab
+            when (uiState.currentTab) {
+                LogTab.SCAN_RECORDS -> {
+                    ScanRecordsContent(
+                        uiState = uiState,
+                        viewModel = actualViewModel,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(uiState.scanSessions) { session ->
-                    ScanSessionItem(
-                        session = session,
-                        timestamp = actualViewModel.formatTimestamp(session.timestamp),
-                        onClick = { actualViewModel.selectSession(session) },
-                        modifier = Modifier.fillMaxWidth()
+                LogTab.DEBUG_LOG -> {
+                    DebugLogContent(
+                        logs = debugLogs,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TabButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Text(text)
+    }
+}
+
+@Composable
+private fun ScanRecordsContent(
+    uiState: LogUiState,
+    viewModel: LogViewModel,
+    modifier: Modifier = Modifier
+) {
+    if (uiState.scanSessions.isEmpty()) {
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.List,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = stringResource(R.string.no_records),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "扫描记录将显示在这里",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(uiState.scanSessions) { session ->
+                ScanSessionItem(
+                    session = session,
+                    timestamp = viewModel.formatTimestamp(session.timestamp),
+                    onClick = { viewModel.selectSession(session) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DebugLogContent(
+    logs: List<com.wiotracker.util.DebugLogEntry>,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+    
+    LaunchedEffect(logs.size) {
+        if (logs.isNotEmpty()) {
+            listState.animateScrollToItem(logs.size - 1)
+        }
+    }
+    
+    if (logs.isEmpty()) {
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "暂无调试日志",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "后台扫描执行时会显示调试信息",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = modifier,
+            contentPadding = PaddingValues(8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            items(logs.size) { index ->
+                val log = logs[index]
+                DebugLogItem(
+                    log = log,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DebugLogItem(
+    log: com.wiotracker.util.DebugLogEntry,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = when (log.level) {
+        LogLevel.DEBUG -> MaterialTheme.colorScheme.surface
+        LogLevel.INFO -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        LogLevel.WARN -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+        LogLevel.ERROR -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+    }
+    
+    val textColor = when (log.level) {
+        LogLevel.DEBUG -> MaterialTheme.colorScheme.onSurface
+        LogLevel.INFO -> MaterialTheme.colorScheme.onPrimaryContainer
+        LogLevel.WARN -> MaterialTheme.colorScheme.onErrorContainer
+        LogLevel.ERROR -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        ),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = log.formatMessage(),
+            modifier = Modifier.padding(8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 11.sp,
+            color = textColor,
+            lineHeight = 14.sp
+        )
     }
 }
 
