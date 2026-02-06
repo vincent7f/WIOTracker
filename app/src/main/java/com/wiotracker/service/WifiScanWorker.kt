@@ -50,18 +50,21 @@ class WifiScanWorker(
             // Scan and match WiFi
             val matchedWifis = wifiScanner.scanAndMatch(targetWifiName)
 
-            // Save records to database
+            // Save records to database with the same scanSessionId for this scan
             if (matchedWifis.isNotEmpty()) {
                 val database = AppDatabase.getDatabase(applicationContext)
                 val repository = WifiScanRepository(database.wifiScanDao())
                 val timestamp = System.currentTimeMillis()
+                // Use timestamp as scanSessionId to group records from the same scan
+                val scanSessionId = timestamp
 
                 matchedWifis.forEach { wifiName ->
                     repository.insertRecord(
                         com.wiotracker.data.database.entity.WifiScanRecord(
                             timestamp = timestamp,
                             wifiName = wifiName,
-                            matchedKeyword = targetWifiName
+                            matchedKeyword = targetWifiName,
+                            scanSessionId = scanSessionId
                         )
                     )
                 }

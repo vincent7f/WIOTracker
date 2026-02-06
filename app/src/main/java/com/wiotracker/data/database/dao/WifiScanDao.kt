@@ -20,6 +20,12 @@ interface WifiScanDao {
     @Query("SELECT COUNT(*) FROM wifi_scan_records WHERE timestamp >= :startTimestamp AND timestamp < :endTimestamp")
     suspend fun getCountByDateRange(startTimestamp: Long, endTimestamp: Long): Int
 
+    @Query("SELECT DISTINCT scanSessionId FROM wifi_scan_records ORDER BY scanSessionId DESC")
+    fun getAllScanSessionIds(): Flow<List<Long>>
+
+    @Query("SELECT * FROM wifi_scan_records WHERE scanSessionId = :scanSessionId ORDER BY wifiName")
+    suspend fun getRecordsBySessionId(scanSessionId: Long): List<WifiScanRecord>
+
     @Query("DELETE FROM wifi_scan_records")
     suspend fun deleteAll()
 }

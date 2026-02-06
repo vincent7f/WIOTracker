@@ -17,6 +17,12 @@ class WifiScanRepository(
         wifiScanDao.insert(record)
     }
 
+    fun getAllScanSessions(): Flow<List<Long>> = wifiScanDao.getAllScanSessionIds()
+
+    suspend fun getRecordsBySessionId(scanSessionId: Long): List<WifiScanRecord> {
+        return wifiScanDao.getRecordsBySessionId(scanSessionId)
+    }
+
     fun getDailyStatsFlow(month: Int, year: Int): Flow<Map<String, Int>> {
         val calendar = Calendar.getInstance()
         calendar.set(year, month, 1, 0, 0, 0)
@@ -27,12 +33,15 @@ class WifiScanRepository(
         val endTimestamp = calendar.timeInMillis
 
         return wifiScanDao.getRecordsByDateRange(startTimestamp, endTimestamp).map { records ->
-            val statsMap = mutableMapOf<String, Int>()
+            // Group by scanSessionId to count unique scan sessions per date
+            val statsMap = mutableMapOf<String, MutableSet<Long>>()
             records.forEach { record ->
                 val date = formatDate(record.timestamp)
-                statsMap[date] = (statsMap[date] ?: 0) + 1
+                val sessionSet = statsMap.getOrPut(date) { mutableSetOf() }
+                sessionSet.add(record.scanSessionId)
             }
-            statsMap
+            // Convert to count map
+            statsMap.mapValues { it.value.size }
         }
     }
 
@@ -51,6 +60,9 @@ class WifiScanRepository(
         calendar.add(Calendar.DAY_OF_MONTH, 1)
         val endOfDay = calendar.timeInMillis
         
+        // Count unique scan sessions for this date
+        // Note: This method is not currently used, but kept for compatibility
+        // The calendar view uses getDailyStatsFlow instead
         return wifiScanDao.getCountByDateRange(startOfDay, endOfDay)
     }
 

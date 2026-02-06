@@ -8,14 +8,16 @@ import com.wiotracker.data.repository.WifiScanRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 data class LogUiState(
-    val records: List<WifiScanRecord> = emptyList(),
+    val scanSessions: List<ScanSession> = emptyList(),
     val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val selectedSession: ScanSession? = null
 )
 
 class LogViewModel(
@@ -26,13 +28,21 @@ class LogViewModel(
     val uiState: StateFlow<LogUiState> = _uiState.asStateFlow()
 
     init {
-        loadRecords()
+        loadScanSessions()
     }
 
-    private fun loadRecords() {
+    private fun loadScanSessions() {
         viewModelScope.launch {
+            // Get all records and group them by scanSessionId
             repository.getAllRecords().collect { records ->
-                _uiState.value = _uiState.value.copy(records = records)
+                // Group records by scanSessionId
+                val sessionsMap = records.groupBy { it.scanSessionId }
+                val sessions = sessionsMap.values.mapNotNull { recordsList ->
+                    ScanSession.fromRecords(recordsList)
+                }
+                // Sort by timestamp descending (newest first)
+                val sortedSessions = sessions.sortedByDescending { it.timestamp }
+                _uiState.value = _uiState.value.copy(scanSessions = sortedSessions)
             }
         }
     }
@@ -43,6 +53,14 @@ class LogViewModel(
             // The flow will automatically update when database changes
             _uiState.value = _uiState.value.copy(isRefreshing = false)
         }
+    }
+
+    fun selectSession(session: ScanSession) {
+        _uiState.value = _uiState.value.copy(selectedSession = session)
+    }
+
+    fun clearSelectedSession() {
+        _uiState.value = _uiState.value.copy(selectedSession = null)
     }
 
     fun formatTimestamp(timestamp: Long): String {

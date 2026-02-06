@@ -1,5 +1,6 @@
 package com.wiotracker.ui.log
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,15 @@ fun LogScreen(
     }
     val uiState by actualViewModel.uiState.collectAsState()
 
+    // Show detail dialog when a session is selected
+    uiState.selectedSession?.let { session ->
+        ScanSessionDetailDialog(
+            session = session,
+            onDismiss = { actualViewModel.clearSelectedSession() },
+            formatTimestamp = { actualViewModel.formatTimestamp(it) }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -37,7 +47,7 @@ fun LogScreen(
             )
         }
     ) { paddingValues ->
-        if (uiState.records.isEmpty()) {
+        if (uiState.scanSessions.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -74,10 +84,11 @@ fun LogScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.records) { record ->
-                    LogItem(
-                        wifiName = record.wifiName,
-                        timestamp = actualViewModel.formatTimestamp(record.timestamp),
+                items(uiState.scanSessions) { session ->
+                    ScanSessionItem(
+                        session = session,
+                        timestamp = actualViewModel.formatTimestamp(session.timestamp),
+                        onClick = { actualViewModel.selectSession(session) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -87,13 +98,14 @@ fun LogScreen(
 }
 
 @Composable
-fun LogItem(
-    wifiName: String,
+fun ScanSessionItem(
+    session: ScanSession,
     timestamp: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -102,16 +114,92 @@ fun LogItem(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = wifiName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = timestamp,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "扫描时间: $timestamp",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "匹配关键词: ${session.matchedKeyword}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "${session.wifiCount}",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "个WiFi",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+fun ScanSessionDetailDialog(
+    session: ScanSession,
+    onDismiss: () -> Unit,
+    formatTimestamp: (Long) -> String
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("扫描详情")
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "扫描时间: ${formatTimestamp(session.timestamp)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "匹配关键词: ${session.matchedKeyword}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "匹配数量: ${session.wifiCount} 个",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Divider()
+                Text(
+                    text = "匹配的WiFi网络:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                session.wifiNames.forEach { wifiName ->
+                    Text(
+                        text = "• $wifiName",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
 }
