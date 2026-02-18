@@ -41,17 +41,31 @@ class WifiScanWorker(
             val calendar = Calendar.getInstance()
             val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
             val currentMinute = calendar.get(Calendar.MINUTE)
+            val currentTimeInMinutes = currentHour * 60 + currentMinute
+            val startTimeInMinutes = startHour * 60
+            val endTimeInMinutes = endHour * 60
+            
             val isInTimeRange = if (startHour < endHour) {
                 // Normal range: startHour to endHour (e.g., 8:00 to 20:00)
-                currentHour >= startHour && currentHour < endHour
-            } else {
+                // Include start time, exclude end time (e.g., 8:00-20:00 means 8:00 to 19:59)
+                currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes
+            } else if (startHour > endHour) {
                 // Overnight range: startHour to endHour across midnight (e.g., 22:00 to 06:00)
-                currentHour >= startHour || currentHour < endHour
+                // This means from startHour to 23:59, or from 00:00 to endHour
+                currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes < endTimeInMinutes
+            } else {
+                // startHour == endHour: This should not happen based on validation, but handle it
+                // If start and end are the same, allow all times (or none - we'll allow all for safety)
+                DebugLogManager.w(tag, "WARNING: startHour == endHour ($startHour), allowing scan")
+                true
             }
             
             DebugLogManager.d(tag, "Time check:")
             DebugLogManager.d(tag, "  - Current time: ${String.format("%02d:%02d", currentHour, currentMinute)}")
             DebugLogManager.d(tag, "  - Time range: ${String.format("%02d:00", startHour)} - ${String.format("%02d:00", endHour)}")
+            DebugLogManager.d(tag, "  - Current time in minutes: $currentTimeInMinutes")
+            DebugLogManager.d(tag, "  - Start time in minutes: $startTimeInMinutes")
+            DebugLogManager.d(tag, "  - End time in minutes: $endTimeInMinutes")
             DebugLogManager.d(tag, "  - Is in time range: $isInTimeRange")
             
             if (!isInTimeRange) {
