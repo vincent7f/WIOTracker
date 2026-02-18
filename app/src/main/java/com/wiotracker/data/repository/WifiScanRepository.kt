@@ -23,7 +23,7 @@ class WifiScanRepository(
         return wifiScanDao.getRecordsBySessionId(scanSessionId)
     }
 
-    fun getDailyStatsFlow(month: Int, year: Int): Flow<Map<String, Int>> {
+    fun getDailyStatsFlow(month: Int, year: Int): Flow<Map<String, Pair<Int, Int>>> {
         val calendar = Calendar.getInstance()
         calendar.set(year, month, 1, 0, 0, 0)
         calendar.set(Calendar.MILLISECOND, 0)
@@ -34,14 +34,32 @@ class WifiScanRepository(
 
         return wifiScanDao.getRecordsByDateRange(startTimestamp, endTimestamp).map { records ->
             // Group by scanSessionId to count unique scan sessions per date
-            val statsMap = mutableMapOf<String, MutableSet<Long>>()
+            // Separate periodic and manual scans
+            val periodicSessionsMap = mutableMapOf<String, MutableSet<Long>>()
+            val totalSessionsMap = mutableMapOf<String, MutableSet<Long>>()
+            
             records.forEach { record ->
                 val date = formatDate(record.timestamp)
-                val sessionSet = statsMap.getOrPut(date) { mutableSetOf() }
-                sessionSet.add(record.scanSessionId)
+                
+                // Add to total sessions
+                val totalSessionSet = totalSessionsMap.getOrPut(date) { mutableSetOf() }
+                totalSessionSet.add(record.scanSessionId)
+                
+                // Add to periodic sessions if scanType is "periodic"
+                if (record.scanType == "periodic") {
+                    val periodicSessionSet = periodicSessionsMap.getOrPut(date) { mutableSetOf() }
+                    periodicSessionSet.add(record.scanSessionId)
+                }
             }
-            // Convert to count map
-            statsMap.mapValues { it.value.size }
+            
+            // Convert to count map: Pair(periodicCount, totalCount)
+            val result = mutableMapOf<String, Pair<Int, Int>>()
+            totalSessionsMap.keys.forEach { date ->
+                val periodicCount = periodicSessionsMap[date]?.size ?: 0
+                val totalCount = totalSessionsMap[date]?.size ?: 0
+                result[date] = Pair(periodicCount, totalCount)
+            }
+            result
         }
     }
 

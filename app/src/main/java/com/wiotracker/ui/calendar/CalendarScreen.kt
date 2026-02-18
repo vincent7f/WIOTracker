@@ -157,12 +157,13 @@ fun CalendarGrid(
                     } else if (dayIndex < startOffset + daysInMonth) {
                         val day = dayIndex - startOffset + 1
                         val date = viewModel.formatDate(day, month, year)
-                        val matchCount = dailyStats[date] ?: 0
-                        val isSuccess = matchCount >= 3
+                        val (periodicCount, totalCount) = dailyStats[date] ?: Pair(0, 0)
+                        val isSuccess = periodicCount >= 3
 
                         CalendarDayCell(
                             day = day,
-                            matchCount = matchCount,
+                            periodicCount = periodicCount,
+                            totalCount = totalCount,
                             isSuccess = isSuccess,
                             modifier = Modifier.weight(1f)
                         )
@@ -181,7 +182,8 @@ fun CalendarGrid(
 @Composable
 fun CalendarDayCell(
     day: Int,
-    matchCount: Int,
+    periodicCount: Int,
+    totalCount: Int,
     isSuccess: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -204,9 +206,16 @@ fun CalendarDayCell(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
-            if (matchCount > 0) {
+            if (totalCount > 0) {
+                val displayText = if (periodicCount > 0 && totalCount > periodicCount) {
+                    "$periodicCount/$totalCount"
+                } else if (periodicCount > 0) {
+                    periodicCount.toString()
+                } else {
+                    totalCount.toString()
+                }
                 Text(
-                    text = matchCount.toString(),
+                    text = displayText,
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isSuccess) Color.White else MaterialTheme.colorScheme.primary
                 )

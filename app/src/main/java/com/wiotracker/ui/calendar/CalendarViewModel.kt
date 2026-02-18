@@ -14,7 +14,7 @@ import java.util.*
 data class CalendarUiState(
     val currentMonth: Int = Calendar.getInstance().get(Calendar.MONTH),
     val currentYear: Int = Calendar.getInstance().get(Calendar.YEAR),
-    val dailyStats: Map<String, Int> = emptyMap(),
+    val dailyStats: Map<String, Pair<Int, Int>> = emptyMap(), // Pair(periodicCount, totalCount)
     val isLoading: Boolean = false
 )
 
@@ -48,12 +48,13 @@ class CalendarViewModel(
         }
     }
 
-    fun getMatchCountForDate(date: String): Int {
-        return _uiState.value.dailyStats[date] ?: 0
+    fun getMatchCountForDate(date: String): Pair<Int, Int> {
+        return _uiState.value.dailyStats[date] ?: Pair(0, 0)
     }
 
     fun isDateSuccess(date: String): Boolean {
-        return getMatchCountForDate(date) >= 3
+        val (periodicCount, _) = getMatchCountForDate(date)
+        return periodicCount >= 3
     }
 
     fun formatDate(day: Int, month: Int, year: Int): String {
