@@ -1,8 +1,14 @@
 package com.wiotracker.service
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
-import androidx.work.CoroutineWorker
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import androidx.work.CoroutineWorker
+import com.wiotracker.R
 import com.wiotracker.data.database.AppDatabase
 import com.wiotracker.data.preferences.AppPreferences
 import com.wiotracker.data.repository.WifiScanRepository
@@ -14,10 +20,50 @@ class WifiScanWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
+    
+    companion object {
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "wifi_scan_channel"
+        private const val CHANNEL_NAME = "WiFi扫描服务"
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "WiFi扫描后台服务通知"
+                setShowBadge(false)
+            }
+            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun createForegroundInfo(): ForegroundInfo {
+        createNotificationChannel()
+        
+        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+            .setContentTitle("WiFi扫描中")
+            .setContentText("正在后台扫描WiFi网络...")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setSilent(true) // Don't make sound
+            .build()
+
+        return ForegroundInfo(NOTIFICATION_ID, notification)
+    }
 
     override suspend fun doWork(): Result {
         val tag = "WifiScanWorker"
         DebugLogManager.d(tag, "========== WifiScanWorker started ==========")
+        
+        // Set foreground service to ensure background execution
+        setForeground(createForegroundInfo())
         
         return try {
             val preferences = AppPreferences(applicationContext)
