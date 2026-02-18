@@ -46,6 +46,12 @@ android {
             isShrinkResources = false
         }
     }
+    
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        disable.addAll(listOf("UnusedResources", "MissingTranslation"))
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

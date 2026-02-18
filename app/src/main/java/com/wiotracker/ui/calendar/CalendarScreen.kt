@@ -112,7 +112,7 @@ fun MonthNavigation(
 fun CalendarGrid(
     month: Int,
     year: Int,
-    dailyStats: Map<String, Int>,
+    dailyStats: Map<String, Pair<Int, Int>>,
     viewModel: CalendarViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -157,7 +157,9 @@ fun CalendarGrid(
                     } else if (dayIndex < startOffset + daysInMonth) {
                         val day = dayIndex - startOffset + 1
                         val date = viewModel.formatDate(day, month, year)
-                        val (periodicCount, totalCount) = dailyStats[date] ?: Pair(0, 0)
+                        val stats = dailyStats[date] ?: Pair(0, 0)
+                        val periodicCount = stats.first
+                        val totalCount = stats.second
                         val isSuccess = periodicCount >= 3
 
                         CalendarDayCell(
