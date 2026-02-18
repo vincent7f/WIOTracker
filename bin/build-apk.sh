@@ -57,7 +57,7 @@ echo "APK size: $(du -h "$APK_DEST" | cut -f1)"
 
 # Copy APK to sync folder only if SYNC_FOLDER environment variable is set
 if [ -n "$SYNC_FOLDER" ]; then
-    SYNC_DEST="${SYNC_FOLDER}/wiotracker-${TIMESTAMP}.apk"
+    SYNC_DEST="${SYNC_FOLDER}/apk/WIOTracker/wiotracker-${TIMESTAMP}.apk"
     
     # Create sync folder if it doesn't exist
     if [ ! -d "$SYNC_FOLDER" ]; then
